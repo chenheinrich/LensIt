@@ -152,6 +152,11 @@ def get_fidtenscls(ellmax_sky=ellmax_sky):
         cls[key] = cl[0:ellmax_sky + 1]
     return cls
 
+def get_tenscls(fn_tensCls, ellmax_sky=ellmax_sky):
+    cls = {}
+    for key, cl in misc.jc_camb.spectra_fromcambfile(fn_tensCls).iteritems():
+        cls[key] = cl[0:ellmax_sky + 1]
+    return cls
 
 def get_ellmat(LD_res, HD_res=14):
     """
@@ -193,7 +198,7 @@ def get_lencmbs_lib(res=14, cache_sims=True, nsims=120, num_threads=4):
                                       cls_unl,
                                       lib_pha=skypha, cache_lens=cache_sims)
 
-def get_lencmbs_lib_tensor(res=14, cache_sims=True, nsims=120, num_threads=4):
+def get_lencmbs_lib_tensor(fn_tensCls, res=14, cache_sims=True, nsims=120, num_threads=4):
     """
     Default simulation library of 120 lensed CMB sims.
     Lensing is always performed at lcell 0.745 amin or so, and lensed CMB are generated on a square with sides lcell 2 ** res
@@ -212,15 +217,23 @@ def get_lencmbs_lib_tensor(res=14, cache_sims=True, nsims=120, num_threads=4):
             skypha.get_sim(idx)
     pbs.barrier()
     #  cls_unl, cls_len = get_fidcls(ellmax_sky=ellmax_sky)
-    cls_unl = get_fidtenscls(ellmax_sky=ellmax_sky)
-    return sims.ffs_cmbs.sims_cmb_len(LENSITDIR + '/temp/%s_sims/fsky%04d/len_alms_tens/' % (nsims, fsky), lib_skyalm,
-                                      cls_unl,
-                                      lib_pha=skypha, cache_lens=cache_sims, 
-                                      do_tensor_only=True) # added
+    if fn_tensCls == None:
+        cls_unl = get_fidtenscls(ellmax_sky=ellmax_sky)
+        cl_file_root = 'lensit_fiducial_tensCls'
+    else:
+        cls_unl = get_tenscls(fn_tensCls, ellmax_sky=ellmax_sky)
+        cl_file_root = os.path.splitext(os.path.basename(fn_tensCls))[0]
+    print('cl_file_root = %s'%cl_file_root)
+    lib_dir = LENSITDIR + '/temp/%s/%s_sims/fsky%04d/len_alms_tens/' % (cl_file_root, nsims, fsky)
+    print('get_lencmbs_lib_tensor: alm lib_dir = %s'%lib_dir)
+    return sims.ffs_cmbs.sims_cmb_len(lib_dir, lib_skyalm, cls_unl,
+            lib_pha=skypha, cache_lens=cache_sims, 
+            do_tensor_only=True) # added
 
 # Added by Chen Heinrich for Lensnet (2019/10)
 #def get_maps_lib(exp, LDres, HDres=14, cache_lenalms=True, cache_maps=False, nsims=120, num_threads=4):
-def get_maps_lib(exp, LDres, HDres=14, cache_lenalms=True, cache_maps=False, nsims=120, num_threads=4, do_tensor_only=False):
+def get_maps_lib(exp, LDres, HDres=14, cache_lenalms=True, cache_maps=False, \
+    nsims=120, num_threads=4, do_tensor_only=False, fn_tensCls=None):
 # end CH
     """
     Default simulation library of 120 full flat sky sims for exp 'exp' at resolution LDres.
@@ -238,7 +251,7 @@ def get_maps_lib(exp, LDres, HDres=14, cache_lenalms=True, cache_maps=False, nsi
         len_cmbs = get_lencmbs_lib(
             res=HDres, cache_sims=cache_lenalms, nsims=nsims) #CH19
     else:
-        len_cmbs = get_lencmbs_lib_tensor(
+        len_cmbs = get_lencmbs_lib_tensor(fn_tensCls,
             res=HDres, cache_sims=cache_lenalms, nsims=nsims, \
             num_threads=num_threads) #CH19    
     # end CH
@@ -261,14 +274,16 @@ def get_maps_lib(exp, LDres, HDres=14, cache_lenalms=True, cache_maps=False, nsi
             pixpha.get_sim(idx)
     pbs.barrier()
     # CH: takes care of different map location if maps are cached
+    cl_dir_root = os.path.splitext(os.path.basename(fn_tensCls))[0]
     if do_tensor_only == True:
         lib_dir = LENSITDIR + \
-        '/temp/%s_sims/fsky%04d/res%s/%s/maps_tens' % (nsims, fsky, LDres, exp)
+            '/temp/%s/%s_sims/fsky%04d/res%s/%s/maps_tens' % (cl_dir_root, nsims, fsky, LDres, exp)
     else:
         lib_dir = LENSITDIR + \
             '/temp/%s_sims/fsky%04d/res%s/%s/maps' % (nsims, fsky, LDres, exp)
+    print('get_maps_lib: maps lib_dir = %s'%lib_dir)        
     return sims.ffs_maps.lib_noisemap(lib_dir, lib_datalm, len_cmbs, cl_transf, nTpix, nPpix, nPpix,
-                                      pix_pha=pixpha, cache_sims=cache_maps)
+            pix_pha=pixpha, cache_sims=cache_maps)
 
 
 def get_isocov(exp, LD_res, HD_res=14, pyFFTWthreads=4):
