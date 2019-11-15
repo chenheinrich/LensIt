@@ -274,10 +274,13 @@ def get_maps_lib(exp, LDres, HDres=14, cache_lenalms=True, cache_maps=False, \
             pixpha.get_sim(idx)
     pbs.barrier()
     # CH: takes care of different map location if maps are cached
-    cl_dir_root = os.path.splitext(os.path.basename(fn_tensCls))[0]
+    if fn_tensCls == None:
+        cl_file_root = 'lensit_fiducial_tensCls'
+    else:
+        cl_file_root = os.path.splitext(os.path.basename(fn_tensCls))[0]
     if do_tensor_only == True:
         lib_dir = LENSITDIR + \
-            '/temp/%s/%s_sims/fsky%04d/res%s/%s/maps_tens' % (cl_dir_root, nsims, fsky, LDres, exp)
+            '/temp/%s/%s_sims/fsky%04d/res%s/%s/maps_tens' % (cl_file_root, nsims, fsky, LDres, exp)
     else:
         lib_dir = LENSITDIR + \
             '/temp/%s_sims/fsky%04d/res%s/%s/maps' % (nsims, fsky, LDres, exp)
