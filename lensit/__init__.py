@@ -216,6 +216,7 @@ def get_lencmbs_lib_tensor(fn_tensCls, res=14, cache_sims=True, nsims=120, num_t
         for _i, idx in misc.misc_utils.enumerate_progress(np.arange(nsims), label='Generating CMB phases'):
             skypha.get_sim(idx)
     pbs.barrier()
+    
     #  cls_unl, cls_len = get_fidcls(ellmax_sky=ellmax_sky)
     if fn_tensCls == None:
         cls_unl = get_fidtenscls(ellmax_sky=ellmax_sky)
@@ -224,8 +225,10 @@ def get_lencmbs_lib_tensor(fn_tensCls, res=14, cache_sims=True, nsims=120, num_t
         cls_unl = get_tenscls(fn_tensCls, ellmax_sky=ellmax_sky)
         cl_file_root = os.path.splitext(os.path.basename(fn_tensCls))[0]
     print('cl_file_root = %s'%cl_file_root)
+    
     lib_dir = LENSITDIR + '/temp/%s/%s_sims/fsky%04d/len_alms_tens/' % (cl_file_root, nsims, fsky)
     print('get_lencmbs_lib_tensor: alm lib_dir = %s'%lib_dir)
+    
     return sims.ffs_cmbs.sims_cmb_len(lib_dir, lib_skyalm, cls_unl,
             lib_pha=skypha, cache_lens=cache_sims, 
             do_tensor_only=True) # added
@@ -273,18 +276,21 @@ def get_maps_lib(exp, LDres, HDres=14, cache_lenalms=True, cache_maps=False, \
         for _i, idx in misc.misc_utils.enumerate_progress(np.arange(nsims), label='Generating Noise phases'):
             pixpha.get_sim(idx)
     pbs.barrier()
+    
     # CH: takes care of different map location if maps are cached
     if fn_tensCls == None:
         cl_file_root = 'lensit_fiducial_tensCls'
     else:
         cl_file_root = os.path.splitext(os.path.basename(fn_tensCls))[0]
+    
     if do_tensor_only == True:
         lib_dir = LENSITDIR + \
             '/temp/%s/%s_sims/fsky%04d/res%s/%s/maps_tens' % (cl_file_root, nsims, fsky, LDres, exp)
     else:
         lib_dir = LENSITDIR + \
             '/temp/%s_sims/fsky%04d/res%s/%s/maps' % (nsims, fsky, LDres, exp)
-    print('get_maps_lib: maps lib_dir = %s'%lib_dir)        
+    print('get_maps_lib: maps lib_dir = %s'%lib_dir)  
+
     return sims.ffs_maps.lib_noisemap(lib_dir, lib_datalm, len_cmbs, cl_transf, nTpix, nPpix, nPpix,
             pix_pha=pixpha, cache_sims=cache_maps)
 
