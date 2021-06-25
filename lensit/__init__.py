@@ -295,13 +295,15 @@ def get_maps_lib(exp, LDres, HDres=14, cache_lenalms=True, cache_maps=False, \
             pix_pha=pixpha, cache_sims=cache_maps)
 
 
-def get_isocov(exp, LD_res, HD_res=14, pyFFTWthreads=4):
+def get_isocov(exp, LD_res, HD_res=14, pyFFTWthreads=4, fn_tensCls=None):
     """
     Set HD_res to 14 for full sky sampled at res LD.
     """
     sN_uKamin, sN_uKaminP, Beam_FWHM_amin, ellmin, ellmax = get_config(exp)
-    cls_unl, cls_len = get_fidcls(ellmax_sky=ellmax_sky)
-
+    if fn_tensCls is None:
+        cls_unl, cls_len = get_fidcls(ellmax_sky=ellmax_sky)
+    else:
+        cls_unl, cls_len = get_tenscls(fn_tensCls)
     cls_noise = {}
     cls_noise['t'] = (sN_uKamin * np.pi / 180. / 60.) ** 2 * \
         np.ones(ellmax_sky + 1)  # simple flat noise Cls
