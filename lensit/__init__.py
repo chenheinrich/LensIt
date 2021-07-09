@@ -154,7 +154,7 @@ def get_fidtenscls(ellmax_sky=ellmax_sky):
 
 def get_tenscls(fn_tensCls, ellmax_sky=ellmax_sky):
     cls = {}
-    for key, cl in misc.jc_camb.spectra_fromcambfile(fn_tensCls).iteritems():
+    for key, cl in misc.jc_camb.spectra_fromcambfile(fn_tensCls, type='tensCls').iteritems():
         cls[key] = cl[0:ellmax_sky + 1]
     return cls
 
@@ -295,15 +295,25 @@ def get_maps_lib(exp, LDres, HDres=14, cache_lenalms=True, cache_maps=False, \
             pix_pha=pixpha, cache_sims=cache_maps)
 
 
-def get_isocov(exp, LD_res, HD_res=14, pyFFTWthreads=4, fn_tensCls=None):
+def get_isocov(exp, LD_res, HD_res=14, pyFFTWthreads=4, do_tensor = False, \
+    fn_scalCls=None, fn_lensCls=None, fn_tensCls=None, r=0.0, lmin=0): 
     """
     Set HD_res to 14 for full sky sampled at res LD.
     """
-    sN_uKamin, sN_uKaminP, Beam_FWHM_amin, ellmin, ellmax = get_config(exp)
-    if fn_tensCls is None:
-        cls_unl, cls_len = get_fidcls(ellmax_sky=ellmax_sky)
+    sN_uKamin, sN_uKaminP, Beam_FWHM_amin, ellmin, ellmax = get_config(exp) 
+    ellmin = lmin 
+
+    if do_tensor:
+        scalCls_unl = get_tenscls(fn_scalCls, ellmax_sky=ellmax_sky)
+        scalCls_len = get_tenscls(fn_lensCls, ellmax_sky=ellmax_sky)
+        tensCls = get_tenscls(fn_tensCls, ellmax_sky=ellmax_sky)
+        cls_unl = scalCls_unl 
+        cls_unl['bb'] += tensCls['bb'] * r / 0.1
+        cls_len = scalCls_len 
+        cls_len['bb'] += tensCls['bb'] * r / 0.1
     else:
-        cls_unl, cls_len = get_tenscls(fn_tensCls)
+        cls_unl, cls_len = get_fidcls(ellmax_sky=ellmax_sky)
+
     cls_noise = {}
     cls_noise['t'] = (sN_uKamin * np.pi / 180. / 60.) ** 2 * \
         np.ones(ellmax_sky + 1)  # simple flat noise Cls
@@ -319,7 +329,9 @@ def get_isocov(exp, LD_res, HD_res=14, pyFFTWthreads=4, fn_tensCls=None):
                                               num_threads=pyFFTWthreads)
     lib_skyalm = ffs_covs.ell_mat.ffs_alm_pyFFTW(get_ellmat(LD_res, HD_res=HD_res),
                                                  filt_func=lambda ell: (ell <= ellmax_sky), num_threads=pyFFTWthreads)
-
-    lib_dir = LENSITDIR + '/temp/Covs/%s/LD%sHD%s' % (exp, LD_res, HD_res)
+    if do_tensor:
+        lib_dir = LENSITDIR + '/temp/Covs/%s/LD%sHD%sellmin%sr%s' % (exp, LD_res, HD_res, ellmin, r)
+    else:
+        lib_dir = LENSITDIR + '/temp/Covs/%s/LD%sHD%sellmin%s' % (exp, LD_res, HD_res, ellmin)
     return ffs_covs.ffs_cov.ffs_diagcov_alm(lib_dir, lib_alm, cls_unl, cls_len, cl_transf, cls_noise,
                                             lib_skyalm=lib_skyalm)
