@@ -308,7 +308,7 @@ def get_isocov(exp, LD_res, HD_res=14, pyFFTWthreads=4, do_tensor = False, \
     """
     sN_uKamin, sN_uKaminP, Beam_FWHM_amin, ellmin, ellmax = get_config(exp) 
     ellmin = lmin 
-    print(ellmin)
+    
     if do_tensor:
         tensCls = get_tenscls(fn_tensCls, ellmax_sky=ellmax_sky)
         cls_unl = get_cls_from_fn(fn_scalCls, ellmax_sky=ellmax_sky)
