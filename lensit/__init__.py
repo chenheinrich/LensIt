@@ -154,7 +154,13 @@ def get_fidtenscls(ellmax_sky=ellmax_sky):
 
 def get_tenscls(fn_tensCls, ellmax_sky=ellmax_sky):
     cls = {}
-    for key, cl in misc.jc_camb.spectra_fromcambfile(fn_tensCls, type='tensCls').iteritems():
+    for key, cl in misc.jc_camb.spectra_fromcambfile(fn_tensCls).iteritems():
+        cls[key] = cl[0:ellmax_sky + 1]
+    return cls
+
+def get_cls_from_fn(fn, ellmax_sky=ellmax_sky):
+    cls = {}
+    for key, cl in misc.jc_camb.spectra_fromcambfile(fn).iteritems():
         cls[key] = cl[0:ellmax_sky + 1]
     return cls
 
@@ -302,14 +308,12 @@ def get_isocov(exp, LD_res, HD_res=14, pyFFTWthreads=4, do_tensor = False, \
     """
     sN_uKamin, sN_uKaminP, Beam_FWHM_amin, ellmin, ellmax = get_config(exp) 
     ellmin = lmin 
-
+    print(ellmin)
     if do_tensor:
-        scalCls_unl = get_tenscls(fn_scalCls, ellmax_sky=ellmax_sky)
-        scalCls_len = get_tenscls(fn_lensCls, ellmax_sky=ellmax_sky)
         tensCls = get_tenscls(fn_tensCls, ellmax_sky=ellmax_sky)
-        cls_unl = scalCls_unl 
-        cls_unl['bb'] += tensCls['bb'] * r / 0.1
-        cls_len = scalCls_len 
+        cls_unl = get_cls_from_fn(fn_scalCls, ellmax_sky=ellmax_sky)
+        cls_unl['bb'] = tensCls['bb'] * r / 0.1
+        cls_len = get_cls_from_fn(fn_lensCls, ellmax_sky=ellmax_sky)
         cls_len['bb'] += tensCls['bb'] * r / 0.1
     else:
         cls_unl, cls_len = get_fidcls(ellmax_sky=ellmax_sky)

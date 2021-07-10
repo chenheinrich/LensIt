@@ -69,6 +69,19 @@ def spectra_fromcambfile(file, type=None, lmax=None):
         Clpt = cosmo.Cl_lminlmax(ell[idc], cols[6][idc] / w[idc])
         Clpe = cosmo.Cl_lminlmax(ell[idc], cols[7][idc] / w[idc])
         return {'tt': Cltt, 'ee': Clee, 'te': Clte, 'bb': Clbb, 'pp': Clpp, 'pt': Clpt, 'pe': Clpe}
+    elif type == 'scalCls':
+        assert (len(cols) >= 6), len(cols)
+        ell = cols[0]
+        w = ell * (ell + 1) / (2. * np.pi)  # weights in output file
+        idc = np.where(ell <= lmax) if lmax is not None else np.arange(len(ell))
+        Cltt = cosmo.Cl_lminlmax(ell[idc], cols[1][idc] / w[idc])
+        Clee = cosmo.Cl_lminlmax(ell[idc], cols[2][idc] / w[idc])
+        Clte = cosmo.Cl_lminlmax(ell[idc], cols[3][idc] / w[idc])
+        w = ell ** 2 * (ell + 1) ** 2 / (2. * np.pi)
+        Clpp = cosmo.Cl_lminlmax(ell[idc], cols[4][idc] / w[idc])
+        w = np.sqrt(ell.astype(float) ** 3 * (ell + 1.) ** 3) / (2. * np.pi)
+        Clpt = cosmo.Cl_lminlmax(ell[idc], cols[5][idc] / w[idc])
+        return {'tt': Cltt, 'ee': Clee, 'te': Clte, 'pp': Clpp, 'pt': Clpt}
     elif type == 'lensedCls' or type == 'tensCls':  # 4 jc_cosmo Cl instances
         assert (len(cols) >= 5), len(cols)
         ell = cols[0]
